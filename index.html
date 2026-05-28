@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="description" content="MyStudyPlanner — ADHD-friendly study tracker for Shivangi">
-  <meta name="theme-color" content="#0f0f0f">
+  <meta name="theme-color" content="#0c0c0e">
 
   <!-- PWA -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -21,7 +21,10 @@
 
   <!-- ─── Top Bar ──────────────────────────────────────────── -->
   <header class="top-bar hidden" id="top-bar">
-    <span id="top-bar-title">MyStudyPlanner</span>
+    <div class="top-bar-left">
+      <button class="back-btn" id="back-btn" title="Go back" aria-label="Go back">←</button>
+      <span id="top-bar-title">MyStudyPlanner</span>
+    </div>
     <button class="avatar-btn" id="avatar-btn" title="Settings" aria-label="Open settings">
       <img id="user-avatar" src="" alt="Profile">
     </button>
@@ -283,7 +286,6 @@
   </nav>
 
   <!-- ─── JS Modules ───────────────────────────────────────── -->
-  <!-- Import order matters: curriculum → firebase → auth → scheduler → app -->
   <script type="module" src="curriculum.js"></script>
   <script type="module" src="firebase.js"></script>
   <script type="module" src="auth.js"></script>

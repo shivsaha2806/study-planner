@@ -80,9 +80,14 @@ const state = {
   rewardsData: null,
   sessionLogs: [],
 
+  // Navigation history for back button
+  navHistory: [],
+  previousScreen: null,
+
   // Active session
   session: {
     active: false,
+    paused: false,
     just5Mins: false,
     track: null,
     topicId: null,
@@ -150,10 +155,39 @@ window.addEventListener('screenChanged', async ({ detail }) => {
   const { hash } = detail;
   await loadAllData();
   renderScreen(hash);
+  updateBackButton(hash);
 });
 
 window.addEventListener('userLoggedIn', ({ detail }) => {
   state.user = detail;
+});
+
+// ─── Back Button Logic ────────────────────────────────────────
+
+function updateBackButton(hash) {
+  const backBtn = document.getElementById('back-btn');
+  if (!backBtn) return;
+  // Show back button on all screens except dashboard
+  const showBack = hash && hash !== '#dashboard' && hash !== '#login';
+  backBtn.classList.toggle('visible', showBack);
+}
+
+// Wire back button
+document.addEventListener('DOMContentLoaded', () => {
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      // If in active session, confirm before leaving
+      if (state.session.active) {
+        if (!confirm('Leave active session? Timer will stop.')) return;
+        clearInterval(state.session.timerInterval);
+        clearInterval(state.session.idleTimer);
+        state.session.active = false;
+        state.session.paused = false;
+      }
+      navigate('#dashboard');
+    });
+  }
 });
 
 function renderScreen(hash) {
@@ -466,6 +500,7 @@ function startSessionSetup(track, nextSub, just5Mins, durationMins) {
   state.session = {
     ...state.session,
     active: true,
+    paused: false,
     just5Mins,
     track,
     topicId: nextSub.topicId,
@@ -513,18 +548,22 @@ function startActiveSession() {
       <div class="current-subtopic" id="session-subtopic-name">${s.subtopicName}</div>
       <div class="current-subsub" id="session-subsub-name">${s.subSubTopicName}</div>
       <div class="timer-ring-wrapper">
-        <svg class="timer-ring" id="timer-svg" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="54" fill="none" stroke="#2a2a2a" stroke-width="8"/>
-          <circle cx="60" cy="60" r="54" fill="none"
+        <svg class="timer-ring" id="timer-svg" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="62" fill="none" stroke="#2a2a2e" stroke-width="8"/>
+          <circle cx="70" cy="70" r="62" fill="none"
             stroke="${TRACK_COLORS[s.track]}" stroke-width="8"
-            stroke-dasharray="339.3" stroke-dashoffset="0"
+            stroke-dasharray="389.6" stroke-dashoffset="0"
             id="timer-progress-ring"
             stroke-linecap="round"
-            transform="rotate(-90 60 60)"/>
+            transform="rotate(-90 70 70)"/>
         </svg>
         <div class="timer-display" id="timer-display">
           ${formatTimer(s.durationMins * 60)}
         </div>
+      </div>
+      <div class="timer-controls">
+        <button class="timer-ctrl-btn pause-btn" id="btn-pause" title="Pause">⏸</button>
+        <button class="timer-ctrl-btn stop-btn"  id="btn-stop"  title="End Session">⏹</button>
       </div>
       <div class="session-done-count" id="session-done-count">0 done this session</div>
       <div class="session-actions">
@@ -542,6 +581,12 @@ function startActiveSession() {
   document.getElementById('btn-break')?.addEventListener('click', () => showBreakOverlay(false));
   document.getElementById('btn-later')?.addEventListener('click', triggerExcuseBuster);
 
+  // Wire pause/stop buttons
+  document.getElementById('btn-pause')?.addEventListener('click', handlePauseResume);
+  document.getElementById('btn-stop')?.addEventListener('click', () => {
+    if (confirm('End this session?')) endSession(false);
+  });
+
   // Start countdown timer
   startTimer();
 
@@ -557,6 +602,7 @@ function startTimer() {
   clearInterval(s.timerInterval);
 
   s.timerInterval = setInterval(() => {
+    if (s.paused) return; // Skip if paused
     s.elapsed++;
     const totalSecs = s.durationMins * 60;
     const remaining = Math.max(0, totalSecs - s.elapsed);
@@ -565,10 +611,10 @@ function startTimer() {
     const display = document.getElementById('timer-display');
     if (display) display.textContent = formatTimer(remaining);
 
-    // Update SVG ring
+    // Update SVG ring (circumference = 2*π*62 ≈ 389.6)
     const ring = document.getElementById('timer-progress-ring');
     if (ring) {
-      const circumference = 339.3;
+      const circumference = 389.6;
       const progress = s.elapsed / totalSecs;
       const offset = circumference * Math.min(progress, 1);
       ring.style.strokeDashoffset = offset;
@@ -584,6 +630,32 @@ function startTimer() {
       addPoints(5, 'session');
     }
   }, 1000);
+}
+
+// ─── Pause / Resume Handler ──────────────────────────────────
+
+function handlePauseResume() {
+  const s = state.session;
+  if (!s.active) return;
+
+  s.paused = !s.paused;
+  const btn = document.getElementById('btn-pause');
+  if (!btn) return;
+
+  if (s.paused) {
+    btn.textContent = '▶';
+    btn.title = 'Resume';
+    btn.classList.remove('pause-btn');
+    btn.classList.add('resume-btn');
+    showToast('Timer paused ⏸', 'info');
+  } else {
+    btn.textContent = '⏸';
+    btn.title = 'Pause';
+    btn.classList.remove('resume-btn');
+    btn.classList.add('pause-btn');
+    s.lastActivity = Date.now();
+    showToast('Timer resumed ▶', 'info');
+  }
 }
 
 function formatTimer(seconds) {
@@ -605,7 +677,7 @@ function startIdleDetection() {
   document.addEventListener('touchstart', resetIdle);
 
   state.session.idleTimer = setInterval(() => {
-    if (!state.session.active) return;
+    if (!state.session.active || state.session.paused) return;
     const idle = Date.now() - state.session.lastActivity;
     if (idle >= IDLE_LIMIT) {
       triggerExcuseBuster();
@@ -896,7 +968,7 @@ async function endSession(trackComplete) {
 
   // Reset session state
   state.session = {
-    active: false, just5Mins: false, track: null, topicId: null, topicName: null,
+    active: false, paused: false, just5Mins: false, track: null, topicId: null, topicName: null,
     subtopicId: null, subtopicName: null, subSubTopicId: null, subSubTopicName: null,
     durationMins: 0, startTime: null, elapsed: 0, timerInterval: null, idleTimer: null,
     lastActivity: Date.now(), doneSessions: 0, pointsEarned: 0, jarEarned: 0, sessionBadges: []
