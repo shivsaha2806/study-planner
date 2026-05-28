@@ -395,15 +395,22 @@ input, select, textarea { font-family: var(--font); }
   height: 10px;
   border-radius: 2px;
 }
-.mini-heatmap-cell.intensity-0 { background: var(--elevated); }
+.mini-heatmap-cell.intensity-0 { background: #2a2a2a; }
 .mini-heatmap-cell.intensity-1 { background: #2d2047; }
 .mini-heatmap-cell.intensity-2 { background: #4c3580; }
 .mini-heatmap-cell.intensity-3 { background: #7c5cbf; }
 .mini-heatmap-cell.intensity-4 { background: var(--frontend); }
 
 /* Week Strip */
-.week-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
-.week-strip::-webkit-scrollbar { height: 2px; }
+.week-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;  /* hide scrollbar */
+}
+.week-strip::-webkit-scrollbar { display: none; }
 .week-strip::-webkit-scrollbar-thumb { background: var(--border); }
 
 .week-strip-day {
@@ -595,7 +602,7 @@ input, select, textarea { font-family: var(--font); }
   font-size: 32px;
   font-weight: 500;
   letter-spacing: 2px;
-  transform: rotate(90deg);
+  /* REMOVE this line: transform: rotate(90deg); */
   color: var(--text);
 }
 .session-done-count {
@@ -971,8 +978,14 @@ input, select, textarea { font-family: var(--font); }
   transition: box-shadow 0.3s;
   flex-shrink: 0;
 }
-.path-node.done    { background: var(--elevated); }
-.path-node.current { animation: pulse 1.8s infinite; }
+
+.path-node.current {
+  border-width: 3px;  /* make border thicker */
+  background: var(--elevated);
+}
+.path-node.done {
+  border-width: 2px;
+}
 .path-node.locked  { opacity: 0.4; }
 
 @keyframes pulse {
@@ -1405,18 +1418,18 @@ input, select, textarea { font-family: var(--font); }
 
 /* ─── ─── RESPONSIVE ─────────────────────────────────────── */
 @media (min-width: 600px) {
-  .screen { max-width: 600px; margin: 0 auto; }
-  .session-actions { grid-template-columns: repeat(4, 1fr); }
-  .history-stats   { grid-template-columns: repeat(4, 1fr); }
-  .week-grid       { grid-template-columns: repeat(7, 1fr); }
-
   .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: 1fr 1fr;  /* 2 cols, not 3 */
+    gap: 20px;
+  }
+  .meta-col {
+    grid-column: 1 / -1;  /* heatmap + week strip span full width */
   }
 }
-
-@media (min-width: 900px) {
-  .dashboard-grid { grid-template-columns: 1fr 1fr 1fr; }
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1.2fr 1fr 1.4fr;  /* 3 cols only on large screens */
+  }
+  .meta-col { grid-column: auto; }
 }

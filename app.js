@@ -570,7 +570,7 @@ function startTimer() {
     if (ring) {
       const circumference = 339.3;
       const progress = s.elapsed / totalSecs;
-      const offset = circumference * (1 - Math.min(progress, 1));
+      const offset = circumference * Math.min(progress, 1);
       ring.style.strokeDashoffset = offset;
     }
 
@@ -1431,7 +1431,7 @@ function drawHeatmap(sessionLogs) {
 
   const today = new Date();
   // Intensity colors (dark theme)
-  const intensityColors = ['#1a1a1a', '#2d2047', '#4c3580', '#7c5cbf', '#c4b5fd'];
+  const intensityColors = ['#2a2a2a', '#2d2047', '#4c3580', '#7c5cbf', '#c4b5fd'];
 
   for (let w = 0; w < WEEKS; w++) {
     for (let d = 0; d < DAYS; d++) {
