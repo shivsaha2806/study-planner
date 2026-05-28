@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="MyStudyPlanner — ADHD-friendly study tracker for Shivangi">
+  <meta name="theme-color" content="#0f0f0f">
+
+  <!-- PWA -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <title>MyStudyPlanner</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- EmailJS CDN (only allowed external dependency besides Firebase) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+</head>
+<body>
+
+  <!-- ─── Top Bar ──────────────────────────────────────────── -->
+  <header class="top-bar hidden" id="top-bar">
+    <span id="top-bar-title">MyStudyPlanner</span>
+    <button class="avatar-btn" id="avatar-btn" title="Settings" aria-label="Open settings">
+      <img id="user-avatar" src="" alt="Profile">
+    </button>
+  </header>
+
+  <!-- ─── SCREEN: Login ────────────────────────────────────── -->
+  <section class="screen active" id="login">
+    <div class="login-container">
+      <h1>MyStudyPlanner</h1>
+      <p>Study smarter, not harder 🌙</p>
+      <button id="google-signin-btn" type="button">Continue with Google</button>
+      <p id="login-error" class="hidden"></p>
+    </div>
+  </section>
+
+  <!-- ─── SCREEN: Dashboard ────────────────────────────────── -->
+  <section class="screen" id="dashboard">
+    <div id="greeting"></div>
+
+    <div class="dashboard-grid">
+
+      <!-- Col 1: Focus Card -->
+      <div class="focus-col">
+        <div class="focus-card" id="focus-card">
+          <div class="track-badge" id="focus-track-badge"></div>
+          <div class="focus-subtopic" id="focus-subtopic-name">Loading...</div>
+          <div class="focus-actions">
+            <button class="btn-primary" id="start-session-btn">Start Session</button>
+            <button class="btn-ghost"   id="just5-btn">Just 5 Mins</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Col 2: Progress + Streak + Points -->
+      <div class="progress-col">
+        <div id="track-progress-bars"></div>
+        <div class="streak-widget" id="streak-widget"></div>
+        <div class="points-widget" id="points-widget"></div>
+      </div>
+
+      <!-- Col 3: Heatmap + Week Strip -->
+      <div class="meta-col">
+        <div class="heatmap-strip" id="heatmap-strip"></div>
+        <div class="week-strip"    id="week-strip"></div>
+      </div>
+
+    </div><!-- /.dashboard-grid -->
+
+    <!-- Recent Badges -->
+    <div class="recent-badges" id="recent-badges"></div>
+  </section>
+
+  <!-- ─── SCREEN: Session / Timer ──────────────────────────── -->
+  <section class="screen" id="session">
+
+    <!-- Track header bar -->
+    <div class="session-header" id="session-track-header"></div>
+
+    <!-- Session content (setup UI or active timer — injected by app.js) -->
+    <div id="session-content"></div>
+
+    <!-- Break Overlay -->
+    <div class="break-overlay hidden" id="break-overlay">
+      <div class="break-card">
+        <div class="break-timer" id="break-timer-display">08:00</div>
+        <p>Take a breather 🌿</p>
+        <button id="back-to-study-btn">Back to Study</button>
+      </div>
+    </div>
+
+    <!-- Excuse Buster Overlay -->
+    <div class="excuse-overlay hidden" id="excuse-overlay">
+      <div class="excuse-card">
+        <p class="excuse-message" id="excuse-message"></p>
+        <div class="excuse-actions">
+          <button id="excuse-study-btn">Okay fine, I'll study</button>
+          <button id="excuse-break-btn">I genuinely need a break</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session End Card -->
+    <div class="session-end-overlay hidden" id="session-end-overlay">
+      <div class="session-end-card">
+        <h2>Session Done! 🎉</h2>
+        <div id="session-end-stats"></div>
+        <button id="session-end-close-btn">Done</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─── SCREEN: Topics ───────────────────────────────────── -->
+  <section class="screen" id="topics">
+
+    <!-- Track tabs -->
+    <div class="track-tabs" id="track-tabs">
+      <button class="track-tab active" data-track="frontend">Frontend</button>
+      <button class="track-tab"        data-track="ai">AI Engineer</button>
+      <button class="track-tab"        data-track="java">Java</button>
+    </div>
+
+    <!-- View tabs -->
+    <div class="view-tabs" id="view-tabs">
+      <button class="view-tab active" data-view="tree">🌲 Tree</button>
+      <button class="view-tab"        data-view="path">🛤️ Path</button>
+    </div>
+
+    <!-- Tree view -->
+    <div id="topic-tree-view"></div>
+
+    <!-- Path view (Duolingo-style) -->
+    <div id="topic-path-view" class="hidden"></div>
+
+    <!-- Resource Editor panel (slides up from bottom) -->
+    <div class="resource-editor-panel hidden" id="resource-editor-panel">
+      <div class="editor-header">
+        <span id="editor-subtopic-name"></span>
+        <button id="editor-close-btn" title="Close">✕</button>
+      </div>
+
+      <!-- Existing resources -->
+      <div id="editor-resources-list"></div>
+
+      <!-- Add new resource form -->
+      <div class="editor-add-form">
+        <input  type="text" id="new-resource-title" placeholder="Resource title">
+        <input  type="url"  id="new-resource-url"   placeholder="https://...">
+        <select id="new-resource-type">
+          <option value="video">📺 Video</option>
+          <option value="playlist">🎵 Playlist</option>
+          <option value="channel">📡 Channel</option>
+          <option value="website">🌐 Website</option>
+        </select>
+        <select id="new-resource-lang">
+          <option value="hindi">🇮🇳 Hindi</option>
+          <option value="english">🌍 English</option>
+          <option value="both">Both</option>
+        </select>
+        <button id="add-resource-btn">Add Resource</button>
+      </div>
+
+      <!-- Personal note -->
+      <textarea id="editor-note" placeholder="Personal notes for this subtopic..."></textarea>
+      <button id="save-note-btn">💾 Save Note</button>
+    </div>
+
+  </section>
+
+  <!-- ─── SCREEN: Week Planner ─────────────────────────────── -->
+  <section class="screen" id="week">
+    <div class="week-grid" id="week-grid"></div>
+    <p class="week-note">Auto-scheduled: Frontend 4 days · AI 2 days · Java 1 day</p>
+  </section>
+
+  <!-- ─── SCREEN: History ──────────────────────────────────── -->
+  <section class="screen" id="history">
+    <canvas id="heatmap-canvas"></canvas>
+    <div class="history-stats" id="history-stats"></div>
+    <div class="history-filters">
+      <select id="filter-track">
+        <option value="all">All Tracks</option>
+        <option value="frontend">Frontend</option>
+        <option value="ai">AI Engineer</option>
+        <option value="java">Java</option>
+      </select>
+    </div>
+    <div class="session-log" id="session-log"></div>
+  </section>
+
+  <!-- ─── SCREEN: Rewards ──────────────────────────────────── -->
+  <section class="screen" id="rewards">
+
+    <!-- Jar -->
+    <div class="jar-display" id="jar-display">
+      <div class="jar-amount" id="jar-amount">₹0</div>
+      <div id="jar-fill-visual"></div>
+      <p class="jar-formula">₹5 per sub-subtopic · ₹25 per subtopic · ₹100 per topic</p>
+      <p class="jar-note">Transfer to Jar App / Fi Money when ready 🏦</p>
+    </div>
+
+    <!-- Food Rewards -->
+    <div class="rewards-food" id="rewards-food">
+      <h3>🍕 Food Rewards</h3>
+      <div id="food-rewards-list"></div>
+    </div>
+
+    <!-- Clothing Rewards -->
+    <div class="rewards-clothing" id="rewards-clothing">
+      <h3>👗 Clothing Rewards</h3>
+      <div class="clothing-progress" id="clothing-progress"></div>
+      <div id="clothing-rewards-list"></div>
+    </div>
+
+    <!-- Badges -->
+    <div class="badges-grid-section">
+      <h3>🏅 Badges</h3>
+      <div class="badges-grid" id="badges-grid"></div>
+    </div>
+
+  </section>
+
+  <!-- ─── Settings Modal ───────────────────────────────────── -->
+  <div class="modal-overlay hidden" id="settings-modal" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="modal-card">
+
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button id="settings-close-btn" aria-label="Close settings">✕</button>
+      </div>
+
+      <!-- User info -->
+      <div class="user-info" id="settings-user-info"></div>
+
+      <!-- Notifications -->
+      <label for="notif-time-input">Daily study reminder time</label>
+      <input type="time" id="notif-time-input" value="21:00">
+
+      <label for="notif-email-input">Reminder email (EmailJS backup)</label>
+      <input type="email" id="notif-email-input" placeholder="your@email.com">
+
+      <!-- Actions -->
+      <div class="settings-actions">
+        <button id="share-claude-btn">📋 Share with Claude</button>
+        <button id="export-data-btn">⬇️ Export Data (JSON)</button>
+        <button id="import-data-btn">⬆️ Import Data (JSON)</button>
+        <button id="logout-btn" class="btn-danger">Sign Out</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── Bottom Navigation ─────────────────────────────────── -->
+  <nav class="bottom-nav hidden" id="bottom-nav" role="navigation" aria-label="Main navigation">
+    <a href="#dashboard" class="nav-item active" data-screen="dashboard" aria-label="Dashboard">
+      <span aria-hidden="true">🏠</span>
+      <span>Home</span>
+    </a>
+    <a href="#session" class="nav-item" data-screen="session" aria-label="Study session">
+      <span aria-hidden="true">▶️</span>
+      <span>Study</span>
+    </a>
+    <a href="#topics" class="nav-item" data-screen="topics" aria-label="Topics">
+      <span aria-hidden="true">📚</span>
+      <span>Topics</span>
+    </a>
+    <a href="#week" class="nav-item" data-screen="week" aria-label="Week planner">
+      <span aria-hidden="true">📅</span>
+      <span>Week</span>
+    </a>
+    <a href="#history" class="nav-item" data-screen="history" aria-label="Study history">
+      <span aria-hidden="true">📊</span>
+      <span>History</span>
+    </a>
+    <a href="#rewards" class="nav-item" data-screen="rewards" aria-label="Rewards">
+      <span aria-hidden="true">🎁</span>
+      <span>Rewards</span>
+    </a>
+  </nav>
+
+  <!-- ─── JS Modules ───────────────────────────────────────── -->
+  <!-- Import order matters: curriculum → firebase → auth → scheduler → app -->
+  <script type="module" src="curriculum.js"></script>
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="scheduler.js"></script>
+  <script type="module" src="app.js"></script>
+
+  <!-- Expose firebase exports to app.js for getCurrentUid fallback -->
+  <script type="module">
+    import { auth, db } from './firebase.js';
+    window.__msp_firebase = { auth, db };
+  </script>
+
+</body>
+</html>
